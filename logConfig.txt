@@ -1,0 +1,8 @@
+logging:
+  pattern:
+    console: "%d - %msg%n"
+  file:
+    path: E://log
+#  file: E://log/sell.log
+#  level:
+#    com.hhy.LoggerTest: debug

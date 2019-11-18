@@ -1,0 +1,49 @@
+        String orderId = KeyUtil.genUniqueKey();
+        //1. 获取商品id与商品数量的集合
+        List<OrderDetail> orderDetails = orderDTO.getOrderDetails();
+
+        //2. 取出商品集合中的idList 并根据idList查询订单中所有商品的详细信息
+        Map<String, Integer> productMap = new HashMap<>();
+        List<String> productIds = new ArrayList<>();
+        for (int i = 0; i < orderDetails.size(); i++) {
+            productIds.add(orderDetails.get(i).getProductId());
+            productMap.put(orderDetails.get(i).getProductId(), orderDetails.get(i).getProductQuantity());
+        }
+        List<ProductInfo> resultProductList = productService.findAllByIds(productIds);
+
+        //3. 计算订单总价
+        List<OrderDetail> detailList = new ArrayList<>();
+        BigDecimal orderAmount = new BigDecimal(BigInteger.ZERO);
+        for (ProductInfo productInfo : resultProductList) {
+            String productId = productInfo.getProductId();
+            if (productMap.containsKey(productId)) {
+                Integer quantity = productMap.get(productId);
+                BigDecimal price = productInfo.getProductPrice();
+                orderAmount = price.multiply(new BigDecimal(quantity)).add(orderAmount);
+
+                OrderDetail orderDetail = new OrderDetail();
+                BeanUtils.copyProperties(productInfo, orderDetail);
+                orderDetail.setOrderId(orderId);
+                orderDetail.setProductQuantity(quantity);
+                detailList.add(orderDetail);
+            }
+        }
+
+        //4. 写入订单数据库
+        OrderMaster orderMaster = new OrderMaster();
+        BeanUtils.copyProperties(orderDTO, orderMaster);
+        orderMaster.setOrderAmount(orderAmount);
+        OrderMaster resultOrder = orderMasterRepository.save(orderMaster);
+
+        //5. 写入订单详情表
+        orderDetailRepository.save(detailList);
+
+
+        // 6. 扣库存,写入商品表
+        List<CartDTO> cartDTOList = new ArrayList<>();
+        orderDTO.getOrderDetails().stream().map(e ->
+                new CartDTO(e.getProductId(), e.getProductQuantity())
+        ).collect(Collectors.toList());
+        productService.decreaseStock(cartDTOList);
+
+        return orderDTO;
