@@ -43,6 +43,15 @@ public class OrderServiceImpl implements OrderService {
     @Autowired
     private OrderDetailRepository orderDetailRepository;
 
+    /*@Autowired
+    private PayService payService;
+
+    @Autowired
+    private PushMessageService pushMessageService;
+
+    @Autowired
+    private WebSocket webSocket;*/
+
     @Override
     @Transactional
     public OrderDTO create(OrderDTO orderDTO) {
@@ -88,6 +97,9 @@ public class OrderServiceImpl implements OrderService {
                 new CartDTO(e.getProductId(), e.getProductQuantity())
         ).collect(Collectors.toList());
         productService.decreaseStock(cartDTOList);
+
+        //发送websocket消息
+        //webSocket.sendMessage(orderDTO.getOrderId());
 
         return orderDTO;
     }
@@ -135,13 +147,13 @@ public class OrderServiceImpl implements OrderService {
         OrderMaster updateResult = orderMasterRepository.save(orderMaster);
         if (null ==updateResult) {
             log.error("【取消订单】 更新失败, orderMaster={}",orderMaster);
-            throw new SellException(ResultEnum.PRODUCT_NOT_EXIST);
+            throw new SellException(ResultEnum.ORDER_UPDATE_FAIL);
         }
 
         //返回库存
         if (CollectionUtils.isEmpty(orderDTO.getOrderDetailList())) {
             log.error("【取消订单】 订单中无商品详情, orderDTO={}",orderDTO);
-            throw new SellException(ResultEnum.PRODUCT_NOT_EXIST);
+            throw new SellException(ResultEnum.ORDER_DETAIL_EMPTY);
         }
         List<CartDTO> cartDTOList = orderDTO.getOrderDetailList().stream()
                 .map(e-> new CartDTO(e.getProductId(), e.getProductQuantity()))
@@ -151,12 +163,14 @@ public class OrderServiceImpl implements OrderService {
         //如果已支付,需要退款
         if (PayStatusEnum.SUCCESS.getCode().equals(orderDTO.getPayStatus())) {
             //TODO
+            //payService.refund(orderDTO);
         }
 
         return orderDTO;
     }
 
     @Override
+    @Transactional
     public OrderDTO finish(OrderDTO orderDTO) {
         //判断订单状态
         if (!OrderStatusEnum.NEW.getCode().equals(orderDTO.getOrderStatus())) {
@@ -173,6 +187,10 @@ public class OrderServiceImpl implements OrderService {
             log.error( "【完结订单】 更新失败, orderMaster={}",orderMaster);
             throw new SellException(ResultEnum.ORDER_UPDATE_FAIL);
         }
+
+        //推送微信模版消息
+        //pushMessageService.orderStatus(orderDTO);
+
         return orderDTO;
     }
 
@@ -181,13 +199,13 @@ public class OrderServiceImpl implements OrderService {
     public OrderDTO paid(OrderDTO orderDTO) {
         //判断订单状态
         if (!OrderStatusEnum.NEW.getCode().equals(orderDTO.getOrderStatus())) {
-            log.error( "【完结订单】 订单状态不正确, orderId={}, orderStatus={}",orderDTO.getOrderId(),orderDTO.getOrderStatus());
+            log.error("【订单支付完成】订单状态不正确, orderId={}, orderStatus={}", orderDTO.getOrderId(), orderDTO.getOrderStatus());
             throw new SellException(ResultEnum.ORDER_STATUS_ERROR);
         }
 
         //判断支付状态
         if (!PayStatusEnum.WAIT.getCode().equals(orderDTO.getPayStatus())) {
-            log.error( "【完结订单】 订单支付状态不正确, orderDTO={}",orderDTO);
+            log.error("【订单支付完成】订单支付状态不正确, orderDTO={}", orderDTO);
             throw new SellException(ResultEnum.ORDER_PAY_STATUS_ERROR);
         }
 
@@ -197,10 +215,19 @@ public class OrderServiceImpl implements OrderService {
         BeanUtils.copyProperties(orderDTO, orderMaster);
         OrderMaster updateResult = orderMasterRepository.save(orderMaster);
         if (null == updateResult) {
-            log.error( "【完结订单】 更新失败, orderMaster={}",orderMaster);
+            log.error("【订单支付完成】更新失败, orderMaster={}", orderMaster);
             throw new SellException(ResultEnum.ORDER_UPDATE_FAIL);
         }
 
         return orderDTO;
+    }
+
+    @Override
+    public Page<OrderDTO> findList(Pageable pageable) {
+        Page<OrderMaster> orderMasterPage = orderMasterRepository.findAll(pageable);
+
+        List<OrderDTO> orderDTOList = OrderMaster2OrderDTOConverter.convert(orderMasterPage.getContent());
+
+        return new PageImpl<>(orderDTOList, pageable, orderMasterPage.getTotalElements());
     }
 }

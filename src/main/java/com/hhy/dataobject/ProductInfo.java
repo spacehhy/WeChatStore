@@ -1,5 +1,8 @@
 package com.hhy.dataobject;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
+import com.hhy.enums.ProductStatusEnum;
+import com.hhy.utils.EnumUtil;
 import lombok.Data;
 import org.hibernate.annotations.DynamicUpdate;
 import org.hibernate.annotations.GenericGenerator;
@@ -27,7 +30,7 @@ public class ProductInfo {
     /** 商品名称. */
     private String productName;
 
-    /** 商品价格. */
+    /** 商品单价. */
     private BigDecimal productPrice;
 
     /** 商品库存. */
@@ -40,7 +43,7 @@ public class ProductInfo {
     private String productIcon;
 
     /** 商品状态.0正常1下架 */
-    private Integer productStatus;
+    private Integer productStatus = ProductStatusEnum.UP.getCode();
 
     /** 商品类目编号. */
     private Integer categoryType;
@@ -50,5 +53,10 @@ public class ProductInfo {
 
     /** 商品修改时间. */
     private Date updateTime;
+
+    @JsonIgnore
+    public ProductStatusEnum getProductStatusEnum() {
+        return EnumUtil.getByCode(productStatus, ProductStatusEnum.class);
+    }
 
 }

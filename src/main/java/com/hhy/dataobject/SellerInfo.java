@@ -14,14 +14,13 @@ import java.util.Date;
  */
 @Entity
 @Data
-@DynamicUpdate
 public class SellerInfo {
 
     /** 卖家ID. */
     @Id
     @GeneratedValue(generator = "uuid")
     @GenericGenerator(name = "uuid",strategy = "uuid")
-    private String id;
+    private String sellerId;
 
     /** 卖家用户名. */
     private String username;
@@ -31,11 +30,5 @@ public class SellerInfo {
 
     /** 卖家OpenID. */
     private String openid;
-
-    /** 卖家ID. */
-    private Date createTime;
-
-    /** 卖家ID. */
-    private Date updateTime;
 
 }

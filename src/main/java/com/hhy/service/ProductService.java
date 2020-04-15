@@ -11,7 +11,7 @@ public interface ProductService {
 
     ProductInfo findOne(String productId);
 
-    /** 查询所有在架商品. */
+    /** 查询所有在架商品列表. */
     List<ProductInfo> findUpAll();
 
     Page<ProductInfo> findAll(Pageable pageable);
@@ -25,4 +25,10 @@ public interface ProductService {
 
     //减库存
     void decreaseStock(List<CartDTO> cartDTOList);
+
+    //上架
+    ProductInfo onSale(String productId);
+
+    //下架
+    ProductInfo offSale(String productId);
 }

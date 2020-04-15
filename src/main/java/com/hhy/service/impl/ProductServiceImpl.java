@@ -40,6 +40,7 @@ public class ProductServiceImpl implements ProductService {
 
     @Override
     public Page<ProductInfo> findAll(Pageable pageable) {
+        //TODO
         Sort sort = Sort.by("createTime").descending();
         return repository.findAll(pageable);
     }
@@ -55,6 +56,7 @@ public class ProductServiceImpl implements ProductService {
     }
 
     @Override
+    @Transactional
     public void increaseStock(List<CartDTO> cartDTOList) {
         for (CartDTO cartDTO : cartDTOList) {
             Optional<ProductInfo> productInfoOptional = repository.findById(cartDTO.getProductId());
@@ -88,4 +90,37 @@ public class ProductServiceImpl implements ProductService {
         }
     }
 
+    @Override
+    public ProductInfo onSale(String productId) {
+        Optional<ProductInfo> productInfoOptional = repository.findById(productId);
+        if (productInfoOptional.isPresent()) {
+            ProductInfo productInfo = productInfoOptional.get();
+            if (productInfo.getProductStatusEnum() == ProductStatusEnum.UP) {
+                throw new SellException(ResultEnum.PRODUCT_STATUS_ERROR);
+            }
+
+            //更新
+            productInfo.setProductStatus(ProductStatusEnum.UP.getCode());
+            return repository.save(productInfo);
+        } else {
+            throw new SellException(ResultEnum.PRODUCT_NOT_EXIST);
+        }
+    }
+
+    @Override
+    public ProductInfo offSale(String productId) {
+        Optional<ProductInfo> productInfoOptional = repository.findById(productId);
+        if (productInfoOptional.isPresent()) {
+            ProductInfo productInfo = productInfoOptional.get();
+            if (productInfo.getProductStatusEnum() == ProductStatusEnum.DOWN) {
+                throw new SellException(ResultEnum.PRODUCT_STATUS_ERROR);
+            }
+
+            //更新
+            productInfo.setProductStatus(ProductStatusEnum.DOWN.getCode());
+            return repository.save(productInfo);
+        } else {
+            throw new SellException(ResultEnum.PRODUCT_NOT_EXIST);
+        }
+    }
 }

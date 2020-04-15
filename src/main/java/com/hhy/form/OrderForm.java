@@ -22,7 +22,7 @@ public class OrderForm {
     @NotEmpty(message = "地址必填")
     private String address;
 
-    /** 买家openid. */
+    /** 买家微信openid. */
     @NotEmpty(message = "openid必填")
     private String openid;
 

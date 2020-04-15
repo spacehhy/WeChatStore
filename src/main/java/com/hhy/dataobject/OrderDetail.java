@@ -15,7 +15,6 @@ import java.util.Date;
  */
 @Entity
 @Data
-@DynamicUpdate
 public class OrderDetail {
 
     /** 订单详情ID. */
@@ -41,11 +40,5 @@ public class OrderDetail {
 
     /** 商品小图. */
     private String productIcon;
-
-    /** 创建时间. */
-    private Date createTime;
-
-    /** 修改时间. */
-    private Date updateTime;
 
 }
